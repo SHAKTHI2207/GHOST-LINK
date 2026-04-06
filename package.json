@@ -1,0 +1,20 @@
+{
+  "name": "ghostlink",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Private hybrid secure messaging MVP scaffold",
+  "scripts": {
+    "test": "node --test",
+    "relay": "node src/cli.js relay-start --state ./demo/relay/state.json --host 0.0.0.0 --port 8080",
+    "ui": "node src/app/server.js --host 127.0.0.1 --port 3000 --data ./demo/ui-user --relay ws://127.0.0.1:8080"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.18.3"
+  }
+}
