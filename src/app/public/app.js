@@ -22,9 +22,12 @@ const el = {
   relayUrlInput: document.getElementById('relayUrlInput'),
   connectRelayBtn: document.getElementById('connectRelayBtn'),
   refreshBtn: document.getElementById('refreshBtn'),
+  identitySummaryCard: document.getElementById('identitySummaryCard'),
   contactsList: document.getElementById('contactsList'),
+  chatAvatar: document.getElementById('chatAvatar'),
   chatTitle: document.getElementById('chatTitle'),
   chatSubtitle: document.getElementById('chatSubtitle'),
+  chatNoticeText: document.getElementById('chatNoticeText'),
   privacyModeSelect: document.getElementById('privacyModeSelect'),
   messagesArea: document.getElementById('messagesArea'),
   messageInput: document.getElementById('messageInput'),
@@ -70,20 +73,8 @@ function showToast(message) {
   }, 2800);
 }
 
-function formatTime(iso) {
-  if (!iso) {
-    return '';
-  }
-
-  const date = new Date(iso);
-  return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
 function escapeHtml(value) {
-  return value
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -91,27 +82,92 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+function formatTime(iso) {
+  if (!iso) {
+    return '';
+  }
+
+  return new Date(iso).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+function formatChatTime(iso) {
+  if (!iso) {
+    return '';
+  }
+
+  const date = new Date(iso);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+
+  if (sameDay) {
+    return formatTime(iso);
+  }
+
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function formatDayLabel(iso) {
+  return new Date(iso).toLocaleDateString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function initialsFor(value) {
+  const clean = String(value ?? '')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim();
+
+  if (!clean) {
+    return 'GL';
+  }
+
+  const parts = clean.split(/\s+/).slice(0, 2);
+  return parts.map((part) => part[0]).join('').toUpperCase();
+}
+
+function shortFingerprint(value) {
+  if (!value) {
+    return 'Unavailable';
+  }
+
+  return `${value.slice(0, 12)}...${value.slice(-8)}`;
+}
+
 function statusMeta(status) {
   if (status === 'verified') {
     return {
       label: 'Verified Secure Connection',
+      shortLabel: 'Verified',
       dotClass: 'status-verified',
-      badgeClass: 'verified'
+      badgeClass: 'verified',
+      avatarClass: 'verified'
     };
   }
 
   if (status === 'risk') {
     return {
       label: 'Security Risk Detected',
+      shortLabel: 'Risk',
       dotClass: 'status-risk',
-      badgeClass: 'risk'
+      badgeClass: 'risk',
+      avatarClass: 'risk'
     };
   }
 
   return {
     label: 'Unverified Contact',
+    shortLabel: 'Unverified',
     dotClass: 'status-unverified',
-    badgeClass: 'unverified'
+    badgeClass: 'unverified',
+    avatarClass: 'unverified'
   };
 }
 
@@ -124,12 +180,57 @@ function setRelayChip(connected) {
   el.relayStatusChip.textContent = connected ? 'Relay Online' : 'Relay Offline';
 }
 
+function autoSizeComposer() {
+  el.messageInput.style.height = 'auto';
+  el.messageInput.style.height = `${Math.min(el.messageInput.scrollHeight, 150)}px`;
+}
+
 async function refreshConfig() {
   const health = await apiRequest('/api/health');
   state.config = health.config;
   el.privacyModeSelect.value = state.config.privacyMode || 'fast';
   el.relayUrlInput.value = state.config.relayUrl || '';
   setRelayChip(Boolean(state.config.relayConnected));
+}
+
+function renderOwnSummaryCard() {
+  if (!state.identity) {
+    el.identitySummaryCard.innerHTML = `
+      <p class="small-meta">Create your identity to start local-first secure messaging.</p>
+    `;
+    return;
+  }
+
+  const relayState = state.config && state.config.relayConnected ? 'Connected' : 'Offline';
+
+  el.identitySummaryCard.innerHTML = `
+    <div class="identity-hero">
+      <div class="avatar avatar-large verified">${escapeHtml(initialsFor(state.identity.id))}</div>
+      <div>
+        <p class="eyebrow">You</p>
+        <h2>${escapeHtml(state.identity.id)}</h2>
+        <p class="identity-summary-copy">Private identity ready for verified messaging.</p>
+      </div>
+    </div>
+    <div class="identity-summary-stats">
+      <div class="mini-stat">
+        <span class="mini-stat-label">Contacts</span>
+        <span class="mini-stat-value">${String(state.contacts.length)}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Relay</span>
+        <span class="mini-stat-value">${escapeHtml(relayState)}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">OPKs</span>
+        <span class="mini-stat-value">${String(state.identity.availableOneTimePreKeys || 0)}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Fingerprint</span>
+        <span class="mini-stat-value">${escapeHtml(shortFingerprint(state.identity.fingerprint))}</span>
+      </div>
+    </div>
+  `;
 }
 
 function renderIdentityCard() {
@@ -139,16 +240,35 @@ function renderIdentityCard() {
   }
 
   el.identityCard.innerHTML = `
-    <h3>${escapeHtml(state.identity.id)}</h3>
-    <p class="small-meta">${escapeHtml(state.identity.fingerprintFormatted)}</p>
+    <div class="identity-title">
+      <div>
+        <p class="eyebrow">Your QR Identity</p>
+        <h3>${escapeHtml(state.identity.id)}</h3>
+      </div>
+      <span class="code-pill">Share in person</span>
+    </div>
+    <p class="section-copy">This QR is the human-friendly trust layer for your cryptographic identity.</p>
     <img src="${state.ownVerification.qrDataUrl}" alt="Verification QR" />
-    <p class="small-meta">Share this QR in person to establish trust.</p>
+    <div class="identity-meta-grid">
+      <div class="mini-stat">
+        <span class="mini-stat-label">Fingerprint</span>
+        <span class="mini-stat-value">${escapeHtml(shortFingerprint(state.identity.fingerprint))}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Signed Prekey</span>
+        <span class="mini-stat-value">${escapeHtml(state.identity.signedPreKeyId)}</span>
+      </div>
+    </div>
+    <div class="fingerprint-block">
+      <p class="eyebrow">Full Fingerprint</p>
+      <p class="mono-text">${escapeHtml(state.ownVerification.fingerprintFormatted)}</p>
+    </div>
   `;
 }
 
 function renderContacts() {
   if (state.chats.length === 0) {
-    el.contactsList.innerHTML = '<p class="small-meta">No contacts yet. Verify one via QR.</p>';
+    el.contactsList.innerHTML = '<p class="small-meta">No contacts yet. Verify one from the trust center.</p>';
     return;
   }
 
@@ -159,16 +279,28 @@ function renderContacts() {
     const item = document.createElement('article');
     item.className = 'contact-item' + (chat.id === state.selectedContactId ? ' active' : '');
     item.innerHTML = `
-      <div class="contact-head">
-        <span class="contact-name">${escapeHtml(chat.id)}</span>
-        <span class="status-dot ${status.dotClass}" aria-label="${escapeHtml(status.label)}"></span>
+      <div class="avatar ${status.avatarClass}">${escapeHtml(initialsFor(chat.id))}</div>
+      <div class="contact-body">
+        <div class="contact-topline">
+          <span class="contact-name">${escapeHtml(chat.id)}</span>
+          <span class="contact-time">${escapeHtml(
+            chat.lastMessage ? formatChatTime(chat.lastMessage.createdAt) : ''
+          )}</span>
+        </div>
+        <div class="contact-bottomline">
+          <p class="contact-preview">${escapeHtml(
+            chat.lastMessage ? chat.lastMessage.text : 'No messages yet'
+          )}</p>
+          <div class="inline-row">
+            <span class="status-dot ${status.dotClass}" aria-hidden="true"></span>
+            <span class="contact-status-label">${escapeHtml(status.shortLabel)}</span>
+          </div>
+        </div>
       </div>
-      <p class="contact-preview">${escapeHtml(chat.lastMessage ? chat.lastMessage.text : 'No messages yet')}</p>
     `;
     item.addEventListener('click', () => {
       selectContact(chat.id);
     });
-
     el.contactsList.appendChild(item);
   }
 }
@@ -177,14 +309,23 @@ function renderChatHeader() {
   const contact = currentContact();
 
   if (!contact) {
-    el.chatTitle.textContent = 'No Contact Selected';
-    el.chatSubtitle.textContent = 'End-to-end encrypted';
+    el.chatAvatar.className = 'avatar avatar-large verified';
+    el.chatAvatar.textContent = 'GL';
+    el.chatTitle.textContent = 'GhostLink';
+    el.chatSubtitle.textContent = 'End-to-end encrypted messaging ready when you are.';
+    el.chatNoticeText.textContent = 'Messages stay encrypted in transit and local on this device.';
     return;
   }
 
   const status = statusMeta(contact.status);
+  el.chatAvatar.className = `avatar avatar-large ${status.avatarClass}`;
+  el.chatAvatar.textContent = initialsFor(contact.id);
   el.chatTitle.textContent = contact.id;
-  el.chatSubtitle.textContent = `End-to-end encrypted • ${status.label}`;
+  el.chatSubtitle.textContent = status.label;
+  el.chatNoticeText.textContent =
+    contact.verified === true
+      ? 'Verified contact. Secure messaging runs invisibly in the background.'
+      : 'Unverified contact. Scan their QR in person to lock identity trust.';
 }
 
 function renderMessages() {
@@ -193,8 +334,9 @@ function renderMessages() {
   if (!contact) {
     el.messagesArea.innerHTML = `
       <div class="empty-chat">
-        <h3>Start Secure Messaging</h3>
-        <p>Choose a contact and send your first message.</p>
+        <div class="empty-chat-badge">Secure Chat Ready</div>
+        <h3>Pick a contact and send your first message</h3>
+        <p>GhostLink keeps the crypto invisible so the conversation feels familiar.</p>
       </div>
     `;
     return;
@@ -203,40 +345,51 @@ function renderMessages() {
   if (state.messages.length === 0) {
     el.messagesArea.innerHTML = `
       <div class="empty-chat">
-        <h3>No messages yet</h3>
-        <p>Send a message to begin this secure conversation.</p>
+        <div class="empty-chat-badge">${escapeHtml(contact.verified ? 'Verified Contact' : 'Waiting for First Message')}</div>
+        <h3>No messages yet with ${escapeHtml(contact.id)}</h3>
+        <p>Write a message below and GhostLink will handle the secure session setup automatically.</p>
       </div>
     `;
     return;
   }
 
   const showReceipt = el.receiptToggle.checked;
+  let lastDayKey = '';
+  const rows = [];
 
-  const rows = state.messages
-    .map((message) => {
-      const directionClass = message.direction === 'out' ? 'out' : 'in';
-      const metaParts = [formatTime(message.createdAt)];
-
-      if (showReceipt && message.direction === 'out') {
-        metaParts.push(message.status || 'sent');
-      }
-
-      if (message.expiresAt) {
-        metaParts.push('self-destruct');
-      }
-
-      return `
-        <div class="message-row ${directionClass}">
-          <div class="message-bubble">
-            <div>${escapeHtml(message.text)}</div>
-            <div class="message-meta">${escapeHtml(metaParts.join(' • '))}</div>
-          </div>
+  for (const message of state.messages) {
+    const dayKey = new Date(message.createdAt).toDateString();
+    if (dayKey !== lastDayKey) {
+      rows.push(`
+        <div class="day-divider">
+          <span>${escapeHtml(formatDayLabel(message.createdAt))}</span>
         </div>
-      `;
-    })
-    .join('');
+      `);
+      lastDayKey = dayKey;
+    }
 
-  el.messagesArea.innerHTML = rows;
+    const directionClass = message.direction === 'out' ? 'out' : 'in';
+    const metaParts = [formatTime(message.createdAt)];
+
+    if (showReceipt && message.direction === 'out') {
+      metaParts.push(message.status || 'sent');
+    }
+
+    if (message.expiresAt) {
+      metaParts.push('self-destruct');
+    }
+
+    rows.push(`
+      <div class="message-row ${directionClass}">
+        <div class="message-bubble">
+          <div class="message-text">${escapeHtml(message.text)}</div>
+          <div class="message-meta">${escapeHtml(metaParts.join(' • '))}</div>
+        </div>
+      </div>
+    `);
+  }
+
+  el.messagesArea.innerHTML = rows.join('');
   el.messagesArea.scrollTop = el.messagesArea.scrollHeight;
 }
 
@@ -244,25 +397,56 @@ function renderContactProfile() {
   const contact = currentContact();
 
   if (!contact) {
-    el.contactProfileCard.innerHTML = '<p class="small-meta">Select a contact to view security details.</p>';
+    el.contactProfileCard.innerHTML = `
+      <p class="small-meta">Select a contact to view verification status, fingerprint, and key details.</p>
+    `;
     return;
   }
 
   const status = statusMeta(contact.status);
-  const riskText = contact.risk ? `<p class="small-meta">Risk: ${escapeHtml(contact.risk)}</p>` : '';
+  const riskText = contact.risk
+    ? `
+        <div class="fingerprint-block">
+          <p class="eyebrow">Risk Alert</p>
+          <p class="small-meta">${escapeHtml(contact.risk)}</p>
+        </div>
+      `
+    : '';
 
   el.contactProfileCard.innerHTML = `
-    <h3>${escapeHtml(contact.id)}</h3>
-    <p class="badge ${status.badgeClass}">🛡 ${escapeHtml(status.label)}</p>
+    <div class="profile-persona">
+      <div class="avatar avatar-large ${status.avatarClass}">${escapeHtml(initialsFor(contact.id))}</div>
+      <div>
+        <p class="eyebrow">Current Contact</p>
+        <h3>${escapeHtml(contact.id)}</h3>
+        <span class="verification-badge ${status.badgeClass}">${escapeHtml(status.label)}</span>
+      </div>
+    </div>
+    <div class="profile-meta-grid">
+      <div class="mini-stat">
+        <span class="mini-stat-label">Verification</span>
+        <span class="mini-stat-value">${escapeHtml(contact.verificationMethod || 'pending')}</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-label">Fingerprint</span>
+        <span class="mini-stat-value">${escapeHtml(shortFingerprint(contact.fingerprint))}</span>
+      </div>
+    </div>
+    <div class="fingerprint-block">
+      <p class="eyebrow">Full Fingerprint</p>
+      <p class="mono-text">${escapeHtml(contact.fingerprint)}</p>
+    </div>
     ${riskText}
-    <p class="small-meta">Fingerprint</p>
-    <p class="small-meta">${escapeHtml(contact.fingerprint)}</p>
     <details>
-      <summary>Advanced Keys</summary>
-      <p class="small-meta">Identity Key</p>
-      <p class="small-meta">${escapeHtml(contact.identityKeyPem || 'Unavailable')}</p>
-      <p class="small-meta">Signing Key</p>
-      <p class="small-meta">${escapeHtml(contact.identitySigningKeyPem || 'Unavailable')}</p>
+      <summary>Advanced Key Material</summary>
+      <div class="key-block">
+        <p class="eyebrow">Identity Key</p>
+        <p class="mono-text">${escapeHtml(contact.identityKeyPem || 'Unavailable')}</p>
+      </div>
+      <div class="key-block">
+        <p class="eyebrow">Signing Key</p>
+        <p class="mono-text">${escapeHtml(contact.identitySigningKeyPem || 'Unavailable')}</p>
+      </div>
     </details>
   `;
 }
@@ -287,6 +471,7 @@ async function refreshChatsAndContacts() {
     state.selectedContactId = state.chats.length > 0 ? state.chats[0].id : null;
   }
 
+  renderOwnSummaryCard();
   renderContacts();
   renderChatHeader();
   renderContactProfile();
@@ -329,6 +514,7 @@ async function bootstrap() {
   }
 
   setRelayChip(Boolean(state.config.relayConnected));
+  renderOwnSummaryCard();
   renderIdentityCard();
   renderContacts();
   renderChatHeader();
@@ -383,6 +569,7 @@ async function connectRelay() {
   });
 
   await refreshConfig();
+  renderOwnSummaryCard();
   showToast('Relay connected and prekeys published.');
 }
 
@@ -439,6 +626,7 @@ async function sendMessage() {
     });
 
     el.messageInput.value = '';
+    autoSizeComposer();
     await refreshChatsAndContacts();
     await refreshMessages();
 
@@ -462,12 +650,9 @@ async function onRuntimeEvent(event) {
     return;
   }
 
-  if (event.type === 'relay_connected') {
+  if (event.type === 'relay_connected' || event.type === 'relay_disconnected') {
     await refreshConfig();
-  }
-
-  if (event.type === 'relay_disconnected') {
-    await refreshConfig();
+    renderOwnSummaryCard();
   }
 
   if (
@@ -479,6 +664,7 @@ async function onRuntimeEvent(event) {
   ) {
     await refreshChatsAndContacts();
     await refreshMessages();
+    renderOwnSummaryCard();
     renderIdentityCard();
   }
 
@@ -500,7 +686,7 @@ async function startEventStream() {
       const event = JSON.parse(message.data);
       await onRuntimeEvent(event);
     } catch {
-      // ignore
+      // ignore malformed event payloads
     }
   });
 
@@ -526,7 +712,7 @@ function startBackgroundRefresh() {
     }
 
     Promise.all([refreshConfig(), refreshChatsAndContacts(), refreshMessages()]).catch(() => {
-      // keep the UI eventually consistent even if the event stream drops
+      // keep the UI eventually consistent if the event stream drops
     });
   }, 3000);
 }
@@ -613,7 +799,9 @@ function bindEvents() {
   });
 
   el.refreshBtn.addEventListener('click', () => {
-    Promise.all([refreshChatsAndContacts(), refreshMessages()]).catch((error) => showToast(error.message));
+    Promise.all([refreshConfig(), refreshChatsAndContacts(), refreshMessages()]).catch((error) => {
+      showToast(error.message);
+    });
   });
 
   el.verifyPayloadBtn.addEventListener('click', () => {
@@ -632,6 +820,10 @@ function bindEvents() {
 
   el.sendBtn.addEventListener('click', () => {
     sendMessage().catch((error) => showToast(error.message));
+  });
+
+  el.messageInput.addEventListener('input', () => {
+    autoSizeComposer();
   });
 
   el.messageInput.addEventListener('keydown', (event) => {
@@ -659,6 +851,7 @@ function bindEvents() {
 
 async function init() {
   bindEvents();
+  autoSizeComposer();
   await bootstrap();
   startBackgroundRefresh();
   await startEventStream();

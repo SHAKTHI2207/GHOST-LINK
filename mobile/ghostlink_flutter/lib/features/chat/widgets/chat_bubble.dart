@@ -18,35 +18,51 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMe = message.isMe;
+    final bubbleColor = isMe
+        ? AppColors.bubbleOutgoing
+        : AppColors.bubbleIncoming;
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
         onLongPress: onLongPress,
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          constraints: const BoxConstraints(maxWidth: 290),
+          margin: const EdgeInsets.symmetric(vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          constraints: const BoxConstraints(maxWidth: 312),
           decoration: BoxDecoration(
-            color: isMe ? const Color(0xFF113F2C) : const Color(0xFF232323),
+            color: bubbleColor,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 16),
+              topLeft: const Radius.circular(22),
+              topRight: const Radius.circular(22),
+              bottomLeft: Radius.circular(isMe ? 22 : 8),
+              bottomRight: Radius.circular(isMe ? 8 : 22),
             ),
             border: Border.all(color: Colors.white10),
+            boxShadow: const [
+              BoxShadow(
+                color: AppColors.shadow,
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(message.text),
-              const SizedBox(height: 6),
+              Text(
+                message.text,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(height: 1.45),
+              ),
+              const SizedBox(height: 7),
               Text(
                 _metaLabel(),
                 style: const TextStyle(
                   color: AppColors.muted,
                   fontSize: 11,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -63,7 +79,7 @@ class ChatBubble extends StatelessWidget {
       return time;
     }
 
-    return '$time • ${message.status}';
+    return '$time  •  ${message.status}';
   }
 
   String _timeLabel(DateTime dateTime) {

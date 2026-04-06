@@ -7,110 +7,143 @@
     <link rel="stylesheet" href="/app.css" />
   </head>
   <body>
-    <div class="bg-grid"></div>
     <div class="app-shell">
-      <aside class="panel contacts-panel">
-        <header class="panel-header">
-          <div>
-            <p class="eyebrow">GhostLink</p>
-            <h1>Secure Chats</h1>
+      <aside class="sidebar">
+        <header class="sidebar-header">
+          <div class="brand-lockup">
+            <div class="brand-mark">GL</div>
+            <div>
+              <p class="eyebrow">GhostLink</p>
+              <h1>Private Messaging</h1>
+            </div>
           </div>
           <span id="relayStatusChip" class="status-chip offline">Relay Offline</span>
         </header>
 
-        <section class="relay-box">
-          <label for="relayUrlInput">Relay URL</label>
+        <section id="identitySummaryCard" class="panel own-card"></section>
+
+        <section class="panel relay-box">
+          <div class="section-title-row">
+            <div>
+              <p class="eyebrow">Network</p>
+              <h2>Relay Connection</h2>
+            </div>
+          </div>
+          <label for="relayUrlInput" class="field-label">Relay URL</label>
           <div class="inline-row">
             <input id="relayUrlInput" type="text" placeholder="ws://127.0.0.1:8080" />
             <button id="connectRelayBtn" class="button button-primary">Connect</button>
           </div>
         </section>
 
-        <section class="contacts-list-wrap">
+        <section class="panel contacts-list-wrap">
           <div class="section-title-row">
-            <h2>Contacts</h2>
+            <div>
+              <p class="eyebrow">Chats</p>
+              <h2>Recent Conversations</h2>
+            </div>
             <button id="refreshBtn" class="button button-subtle">Refresh</button>
           </div>
+          <p class="section-copy">Scan once, verify once, then chat like a normal messenger.</p>
           <div id="contactsList" class="contacts-list"></div>
         </section>
       </aside>
 
-      <main class="panel chat-panel">
-        <header class="chat-header">
-          <div>
-            <h2 id="chatTitle">No Contact Selected</h2>
-            <p id="chatSubtitle">End-to-end encrypted</p>
-          </div>
-          <div class="chat-header-actions">
-            <label class="toggle-wrap" for="privacyModeSelect">
-              Privacy Mode
-              <select id="privacyModeSelect">
-                <option value="fast">Fast</option>
-                <option value="stealth">Stealth</option>
-              </select>
-            </label>
-          </div>
-        </header>
+      <main class="chat-shell">
+        <section class="panel chat-panel">
+          <header class="chat-header">
+            <div class="chat-persona">
+              <div id="chatAvatar" class="avatar avatar-large">GL</div>
+              <div>
+                <h2 id="chatTitle">No Contact Selected</h2>
+                <p id="chatSubtitle">End-to-end encrypted messaging ready when you are.</p>
+              </div>
+            </div>
 
-        <section id="messagesArea" class="messages-area">
-          <div class="empty-chat">
-            <h3>Start Secure Messaging</h3>
-            <p>
-              Verify a contact by QR and send your first message. Security stays invisible, chat stays simple.
-            </p>
+            <div class="chat-header-actions">
+              <label class="mode-control" for="privacyModeSelect">
+                <span class="mode-label">Privacy Mode</span>
+                <select id="privacyModeSelect">
+                  <option value="fast">Fast</option>
+                  <option value="stealth">Stealth</option>
+                </select>
+              </label>
+            </div>
+          </header>
+
+          <div class="notice-bar">
+            <div class="notice-pill"></div>
+            <p id="chatNoticeText">Messages stay encrypted in transit and local on this device.</p>
           </div>
+
+          <section id="messagesArea" class="messages-area">
+            <div class="empty-chat">
+              <div class="empty-chat-badge">Secure Chat Ready</div>
+              <h3>Start a conversation that feels normal</h3>
+              <p>Verify a contact in the trust panel, then send messages like any modern messenger.</p>
+            </div>
+          </section>
+
+          <footer class="composer">
+            <div class="composer-meta">
+              <label class="meta-control">
+                <span>Self-destruct</span>
+                <select id="selfDestructSelect">
+                  <option value="">Off</option>
+                  <option value="30">30s</option>
+                  <option value="300">5m</option>
+                  <option value="3600">1h</option>
+                </select>
+              </label>
+              <label class="meta-control receipt-toggle">
+                <input id="receiptToggle" type="checkbox" checked />
+                <span>Show delivery labels</span>
+              </label>
+            </div>
+
+            <div class="composer-row">
+              <button class="icon-button" type="button" aria-label="Add attachment" disabled>+</button>
+              <textarea
+                id="messageInput"
+                placeholder="Type a secure message..."
+                rows="1"
+              ></textarea>
+              <button id="sendBtn" class="button send-button">Send</button>
+            </div>
+          </footer>
         </section>
-
-        <footer class="composer">
-          <div class="composer-row">
-            <textarea
-              id="messageInput"
-              placeholder="Type a secure message..."
-              rows="2"
-            ></textarea>
-            <button id="sendBtn" class="button button-primary">Send</button>
-          </div>
-          <div class="composer-meta">
-            <label>
-              Self-destruct
-              <select id="selfDestructSelect">
-                <option value="">Off</option>
-                <option value="30">30s</option>
-                <option value="300">5m</option>
-                <option value="3600">1h</option>
-              </select>
-            </label>
-            <label class="receipt-toggle">
-              <input id="receiptToggle" type="checkbox" checked />
-              Show delivery labels
-            </label>
-          </div>
-        </footer>
       </main>
 
-      <aside class="panel security-panel">
-        <header class="panel-header">
-          <div>
-            <p class="eyebrow">Trust Center</p>
-            <h2>Identity & Verification</h2>
-          </div>
-        </header>
+      <aside class="trust-column">
+        <section class="panel trust-panel">
+          <header class="panel-header">
+            <div>
+              <p class="eyebrow">Trust Center</p>
+              <h2>Identity & Verification</h2>
+            </div>
+          </header>
 
-        <section id="identityCard" class="identity-card"></section>
+          <section id="identityCard" class="identity-card"></section>
 
-        <section class="verify-card">
-          <h3>Verify Contact</h3>
-          <p>Scan QR or paste verification URI.</p>
-          <textarea id="verifyPayloadInput" rows="3" placeholder="ghostlink://verify/..." ></textarea>
-          <div class="inline-row">
-            <button id="verifyPayloadBtn" class="button button-primary">Verify</button>
-            <button id="scanQrBtn" class="button button-subtle">Scan QR</button>
-          </div>
-          <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
-          <p id="scannerHint" class="scanner-hint"></p>
+          <section class="verify-card">
+            <div class="section-title-row">
+              <div>
+                <p class="eyebrow">Add Contact</p>
+                <h3>Verify by QR</h3>
+              </div>
+            </div>
+            <p class="section-copy">Paste a verification link or scan the QR code in person.</p>
+            <textarea id="verifyPayloadInput" rows="3" placeholder="ghostlink://verify/..."></textarea>
+            <div class="inline-row">
+              <button id="verifyPayloadBtn" class="button button-primary">Verify Contact</button>
+              <button id="scanQrBtn" class="button button-subtle">Scan QR</button>
+            </div>
+            <video id="scannerVideo" class="scanner-video" autoplay playsinline muted></video>
+            <p id="scannerHint" class="scanner-hint"></p>
+          </section>
+
+          <section id="contactProfileCard" class="contact-profile"></section>
         </section>
-
-        <section id="contactProfileCard" class="contact-profile"></section>
       </aside>
     </div>
 
@@ -118,8 +151,14 @@
 
     <div id="onboardingOverlay" class="overlay hidden">
       <div class="overlay-card">
-        <h2>Create Your Private Identity</h2>
-        <p>No phone number. No email. Just your local cryptographic identity.</p>
+        <div class="overlay-brand">
+          <div class="brand-mark brand-mark-large">GL</div>
+          <div>
+            <p class="eyebrow">Welcome</p>
+            <h2>Create Your Private Identity</h2>
+          </div>
+        </div>
+        <p>No phone number, no email, no account ceremony. Pick a name and GhostLink handles the cryptography for you.</p>
         <div class="inline-row">
           <input id="identityNameInput" type="text" placeholder="Choose a username" />
           <button id="createIdentityBtn" class="button button-primary">Create Identity</button>

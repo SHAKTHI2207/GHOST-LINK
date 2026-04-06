@@ -5,10 +5,7 @@ import '../../../core/constants/app_colors.dart';
 class MessageInput extends StatefulWidget {
   final Future<void> Function(String text) onSend;
 
-  const MessageInput({
-    super.key,
-    required this.onSend,
-  });
+  const MessageInput({super.key, required this.onSend});
 
   @override
   State<MessageInput> createState() => _MessageInputState();
@@ -28,45 +25,83 @@ class _MessageInputState extends State<MessageInput> {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        decoration: const BoxDecoration(
+          color: AppColors.panel,
+          border: Border(top: BorderSide(color: AppColors.surfaceStroke)),
+        ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Container(
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppColors.panelAlt,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: IconButton(
-                icon: const Icon(Icons.add),
+                icon: const Icon(Icons.add_rounded),
                 onPressed: () {},
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
-              child: TextField(
-                controller: _controller,
-                minLines: 1,
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  hintText: 'Type message...',
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.panelAlt,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: AppColors.surfaceStroke),
+                ),
+                child: TextField(
+                  controller: _controller,
+                  minLines: 1,
+                  maxLines: 5,
+                  decoration: const InputDecoration(
+                    hintText: 'Type a secure message...',
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    filled: false,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Container(
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryStrong],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.28),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: IconButton(
                 icon: _sending
                     ? const SizedBox(
                         height: 16,
                         width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF03110A),
+                        ),
                       )
-                    : const Icon(Icons.send_rounded, color: Colors.black),
+                    : const Icon(Icons.send_rounded, color: Color(0xFF03110A)),
                 onPressed: _sending
                     ? null
                     : () async {

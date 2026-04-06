@@ -7,11 +7,7 @@ class StatusBadge extends StatelessWidget {
   final ContactTrustStatus status;
   final bool compact;
 
-  const StatusBadge({
-    super.key,
-    required this.status,
-    this.compact = false,
-  });
+  const StatusBadge({super.key, required this.status, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
@@ -19,13 +15,13 @@ class StatusBadge extends StatelessWidget {
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 8 : 10,
-        vertical: compact ? 4 : 6,
+        horizontal: compact ? 9 : 12,
+        vertical: compact ? 5 : 7,
       ),
       decoration: BoxDecoration(
         color: meta.color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: meta.color.withOpacity(0.45)),
+        border: Border.all(color: meta.color.withOpacity(0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -37,7 +33,7 @@ class StatusBadge extends StatelessWidget {
             style: TextStyle(
               color: meta.color,
               fontSize: compact ? 11 : 12,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
