@@ -6,6 +6,9 @@ const state = {
   chats: [],
   selectedContactId: null,
   messages: [],
+  eventStream: null,
+  backgroundRefreshId: null,
+  reconnectTimerId: null,
   scanner: {
     running: false,
     stream: null,
@@ -119,6 +122,14 @@ function currentContact() {
 function setRelayChip(connected) {
   el.relayStatusChip.className = connected ? 'status-chip online' : 'status-chip offline';
   el.relayStatusChip.textContent = connected ? 'Relay Online' : 'Relay Offline';
+}
+
+async function refreshConfig() {
+  const health = await apiRequest('/api/health');
+  state.config = health.config;
+  el.privacyModeSelect.value = state.config.privacyMode || 'fast';
+  el.relayUrlInput.value = state.config.relayUrl || '';
+  setRelayChip(Boolean(state.config.relayConnected));
 }
 
 function renderIdentityCard() {
@@ -348,6 +359,10 @@ async function createIdentity() {
 
   showToast('Identity created.');
   await bootstrap();
+
+  if (el.relayUrlInput.value.trim()) {
+    await connectRelay();
+  }
 }
 
 async function connectRelay() {
@@ -367,7 +382,7 @@ async function connectRelay() {
     body: JSON.stringify({ relayUrl })
   });
 
-  setRelayChip(true);
+  await refreshConfig();
   showToast('Relay connected and prekeys published.');
 }
 
@@ -386,6 +401,10 @@ async function verifyPayload() {
   el.verifyPayloadInput.value = '';
   showToast('Contact verified successfully.');
   await refreshChatsAndContacts();
+
+  if (!state.selectedContactId && state.chats.length > 0) {
+    await selectContact(state.chats[0].id);
+  }
 }
 
 async function sendMessage() {
@@ -444,11 +463,11 @@ async function onRuntimeEvent(event) {
   }
 
   if (event.type === 'relay_connected') {
-    setRelayChip(true);
+    await refreshConfig();
   }
 
   if (event.type === 'relay_disconnected') {
-    setRelayChip(false);
+    await refreshConfig();
   }
 
   if (
@@ -469,7 +488,12 @@ async function onRuntimeEvent(event) {
 }
 
 async function startEventStream() {
+  if (state.eventStream) {
+    state.eventStream.close();
+  }
+
   const events = new EventSource('/api/events');
+  state.eventStream = events;
 
   events.addEventListener('update', async (message) => {
     try {
@@ -481,8 +505,30 @@ async function startEventStream() {
   });
 
   events.onerror = () => {
-    setTimeout(startEventStream, 2500);
+    events.close();
+
+    if (state.eventStream === events) {
+      state.eventStream = null;
+    }
+
+    clearTimeout(state.reconnectTimerId);
+    state.reconnectTimerId = setTimeout(() => {
+      startEventStream().catch((error) => showToast(error.message));
+    }, 2500);
   };
+}
+
+function startBackgroundRefresh() {
+  clearInterval(state.backgroundRefreshId);
+  state.backgroundRefreshId = setInterval(() => {
+    if (document.hidden) {
+      return;
+    }
+
+    Promise.all([refreshConfig(), refreshChatsAndContacts(), refreshMessages()]).catch(() => {
+      // keep the UI eventually consistent even if the event stream drops
+    });
+  }, 3000);
 }
 
 async function startScanner() {
@@ -601,12 +647,20 @@ function bindEvents() {
 
   window.addEventListener('beforeunload', () => {
     stopScanner();
+    clearInterval(state.backgroundRefreshId);
+    clearTimeout(state.reconnectTimerId);
+
+    if (state.eventStream) {
+      state.eventStream.close();
+      state.eventStream = null;
+    }
   });
 }
 
 async function init() {
   bindEvents();
   await bootstrap();
+  startBackgroundRefresh();
   await startEventStream();
 }
 

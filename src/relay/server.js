@@ -27,14 +27,14 @@ function requireAuthedUser(socket, requestId) {
 
 export async function startRelayServer(options = {}) {
   const host = options.host || '0.0.0.0';
-  const port = Number(options.port || 8080);
+  const requestedPort = Number(options.port ?? 8080);
   const stateFile = options.stateFile || './relay-state.json';
   const onLog = typeof options.onLog === 'function' ? options.onLog : () => {};
 
   const store = await createRelayStateStore(stateFile);
   const socketsByUser = new Map();
 
-  const server = new WebSocketServer({ host, port });
+  const server = new WebSocketServer({ host, port: requestedPort });
 
   function addSocketForUser(userId, socket) {
     if (!socketsByUser.has(userId)) {
@@ -226,6 +226,12 @@ export async function startRelayServer(options = {}) {
     server.once('listening', resolve);
     server.once('error', reject);
   });
+
+  const address = server.address();
+  const port =
+    address && typeof address === 'object' && typeof address.port === 'number'
+      ? address.port
+      : requestedPort;
 
   return {
     host,
