@@ -1,10 +1,72 @@
 # GhostLink
 
+
+Private communication, rebuilt from first principles.
+
+GhostLink is a hybrid secure messaging system designed to deliver end-to-end confidentiality, forward secrecy, and metadata resistance, while maintaining a clean, intuitive user experience.
+
+It combines modern cryptographic protocols with a minimal, privacy-first interface—giving users control without complexity.
+
 GhostLink is now split into two layers:
 - Security core: X3DH bootstrap with signed prekeys + one-time prekeys, ChaCha20-Poly1305 payload encryption, WebSocket relay transport.
-- UX layer:
-  - dark-mode web app with chat list, contact trust indicators, QR verification, and privacy mode toggle.
-  - Flutter mobile MVP scaffold in `mobile/ghostlink_flutter` with onboarding, QR verification, chat, trust profile, and settings.
+- UX layer: - dark-mode web app with chat list, contact trust indicators, QR verification, and privacy mode toggle.
+-  Flutter mobile MVP scaffold in `mobile/ghostlink_flutter` with onboarding, QR verification, chat, trust profile, and settings.
+
+Why GhostLink?
+
+Most messaging apps optimize for convenience first, privacy second.
+
+GhostLink flips that.
+	•	❌ No phone numbers
+	•	❌ No centralized identity tracking
+	•	❌ No plaintext exposure
+	•	✅ Cryptographic identity (public/private keys)
+	•	✅ End-to-end encryption by default
+	•	✅ Forward secrecy + post-compromise security
+	•	✅ User-controlled trust verification (QR + fingerprints)
+
+GhostLink isn’t just another chat app.
+It’s a secure communication layer built for:
+	•	Privacy-first individuals
+	•	Small trusted networks (family, teams)
+	•	Experimental secure systems & research
+
+⸻
+
+ Architecture Overview
+
+GhostLink is split into two layers:
+
+   Security Core
+	•	X3DH key exchange
+	•	Identity Keys (IK)
+	•	Signed PreKeys (SPK)
+	•	One-Time PreKeys (OPK)
+	•	Double Ratchet
+	•	Per-message key evolution
+	•	Forward secrecy
+	•	Post-compromise recovery
+	•	Encryption
+	•	ChaCha20-Poly1305
+	•	Transport
+	•	WebSocket relay (zero-knowledge)
+
+⸻
+
+ UX Layer
+
+Web App
+	•	Dark-mode interface
+	•	Chat list + trust indicators
+	•	QR-based contact verification
+	•	Privacy mode toggle (fast / stealth)
+
+Mobile (Flutter MVP)
+	•	Onboarding with identity generation
+	•	QR verification flow
+	•	Chat interface
+	•	Trust profile (fingerprint + keys)
+	•	Settings (privacy mode, self-destruct)
 
 ## What Works
 
@@ -88,6 +150,33 @@ Useful low-level commands:
 ```bash
 npm test
 ```
+
+## Current Limitations
+	•	No skipped-message key cache (out-of-order messages not handled yet)
+	•	No multi-hop routing (Tor-style relay not implemented)
+	•	No cover traffic (stealth mode is partial)
+	•	Single-device identity model
+
+⸻
+ ## Roadmap
+	•	Skipped message key handling
+	•	Multi-hop relay routing
+	•	Cover traffic engine
+	•	Multi-device sync
+	•	Post-quantum cryptography (hybrid key exchange)
+
+⸻
+## Design Philosophy
+
+GhostLink follows one rule:
+
+Security should be invisible, but always verifiable.
+
+Users shouldn’t need to understand cryptography—
+but they should always have the ability to verify trust when it matters.
+
+⸻
+
 
 ## Notes
 
